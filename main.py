@@ -7,6 +7,8 @@ import sqlite3
 import json
 import os
 
+# TODO: Перевести бот на русский
+
 dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
 load_dotenv(dotenv_path)
 API_TOKEN = os.getenv('API_TOKEN')
@@ -35,6 +37,7 @@ def validate_json(json_data):
     except ValueError:
         return False
 
+# TODO: Проработать и добавить необходимые для работы скрипта переменные
 def init_db():
     conn = sqlite3.connect('bot.db')
     cursor = conn.cursor()
@@ -72,6 +75,7 @@ async def cancel_command(message: types.Message, state: FSMContext):
     await state.finish()
     await message.reply('Процесс был успешно прерван.')
 
+# TODO: Проработать и добавить необходимые для работы скрипта переменные
 @dp.message_handler(commands=['create'])
 async def create_project(message: types.Message):
     await Form.name.set()
@@ -121,6 +125,7 @@ async def process_jsonKey(message: types.Message, state: FSMContext):
 
     await state.finish()
 
+# TODO: Проработать и добавить необходимые для работы скрипта переменные
 @dp.message_handler(commands=['settings'])
 async def settings(message: types.Message):
     await SettingsForm.param1.set()

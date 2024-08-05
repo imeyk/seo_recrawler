@@ -29,14 +29,5 @@ def indexnow_publish(user_id, project_url=None, indexnow=False, indexnow_key=Non
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, format='[%(asctime)s] %(levelname)s: %(message)s', datefmt='%H:%M:%S %d.%m.%y')
     
-    user_id = 777
-    indexnow = True
-    project_url = "https://x-profil.ru"
-    urls = ["https://x-profil.ru", "https://x-profil.ru/kiyanki-krovelnye/kiyanka-bezotbojnaya-plastikovaya-bk-30"]  # Замените на ваши URL
-    key = "f2f3b1c1082949fba2dce99e1326469b"  # Замените на ваш ключ IndexNow
-    key_location = "https://x-profil.ru/f2f3b1c1082949fba2dce99e1326469b.txt"  # Замените на путь до файла ключа IndexNow
-    # key_location = None
-    engines = ["yandex", "bing"]  # Замените на ["bing"], ["yandex"] или ["bing", "yandex"]
-
     indexnow_publish(user_id, project_url, indexnow, key, key_location, indexnow_service=engines, line=urls)
 

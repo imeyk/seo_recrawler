@@ -108,7 +108,7 @@ async def cmd_start(callback_query: types.CallbackQuery, state: FSMContext):
     builder.row(types.InlineKeyboardButton(text="Настройки", callback_data="settings"))
     builder.row(types.InlineKeyboardButton(text="Помощь", url="https://imeyk.gitbook.io/recrawler-faq"))
 
-    await bot.send_message(callback_query.from_user.id, f"🤖 Привет {callback_query.from_user.first_name}, для просмотра списка проектов используйте команду /projects или /settings для конфигурации работы сценария бота", reply_markup=builder.as_markup())
+    await bot.send_message(callback_query.from_user.id, f"Привет {callback_query.from_user.first_name}, для просмотра списка проектов используйте команду /projects или /settings для конфигурации работы сценария бота", reply_markup=builder.as_markup())
 
 # Реферальная система
 @dp.message(CommandStart(
@@ -808,7 +808,7 @@ async def get_project_info(message: Message):
 
 # Функция выполняемая при запуске бота
 async def on_startup():
-    await bot.send_message(admin_id, "Бот запущен 🤖", disable_notification=True)
+    await bot.send_message(admin_id, "🤖 Бот запущен", disable_notification=True)
 
 # Запуск процесса поллинга новых апдейтов
 async def main():

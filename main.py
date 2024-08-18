@@ -808,7 +808,7 @@ async def get_project_info(message: Message):
 
 # Функция выполняемая при запуске бота
 async def on_startup():
-    await bot.send_message(admin_id, "Бот запущен", disable_notification=True)
+    await bot.send_message(admin_id, "Бот запущен 🤖", disable_notification=True)
 
 # Запуск процесса поллинга новых апдейтов
 async def main():

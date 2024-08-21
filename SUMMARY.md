@@ -1,6 +1,7 @@
 # Table of contents
 
 * [Обновления](README.md)
+* [Добавление проекта](dobavlenie-proekta.md)
 
 ## &#x20;
 

@@ -2,12 +2,14 @@ import logging
 from dotenv import main
 import asyncio
 import os
+import time
 import sqlite3
 import json
 import re
 from aiogram import F, Router
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram import Bot, Dispatcher, types
+from aiogram.types import BotCommand, BotCommandScopeDefault
 from aiogram.filters import Command, CommandObject, CommandStart, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
@@ -19,12 +21,11 @@ from google.publish import google_publish
 from yandex.recrawl import yandex_recrawl
 from indexnow.publish_single import indexnow_publish
 
-# Включаем логирование, чтобы не пропустить важные сообщения
-logging.basicConfig(level=logging.INFO, format='%(asctime)s / %(levelname)s / %(message)s', datefmt='%d.%m.%y %H:%M:%S')
+# TODO: Настроить запись логов в файл
+logging.basicConfig(level=logging.INFO, format='%(asctime)s / %(levelname)s / %(message)s', datefmt='%d.%m.%y %H:%M:%S') # Запись логов в файл
 main.load_dotenv()
 storage = MemoryStorage()
 router = Router()
-
 bot = Bot(token=os.getenv("API_TOKEN"))
 dp = Dispatcher(storage=storage)
 DB = os.getenv("DB")
@@ -433,6 +434,7 @@ async def process_use_webmaster(message: types.Message, state: FSMContext):
     await state.set_state(CreateProject.indexnow)
     builder = InlineKeyboardBuilder()
     builder.add(types.InlineKeyboardButton(text="Да", callback_data="useIndexNow"))
+    # TODO: Если до этого Яндекс Вебмастер и Google Indexing API = False, то заменяем кнопку нет
     builder.add(types.InlineKeyboardButton(text="Нет", callback_data="notUseIndexNow"))
     await message.answer(
         "Использовать для переобхода технологию IndexNow (Yandex, Bing)?",
@@ -704,6 +706,19 @@ async def mysettings(message: types.Message):
 '''
 
 # Функции администрирования
+## Принудительная остановка бота, командой /stop
+@dp.message(StateFilter(None), Command("stop"))
+async def broadcast_command(message: types.Message, state: FSMContext):
+    if message.from_user.id == admin_id:
+        await message.answer(text=f"У вас нет прав для использования этой команды")
+        return
+
+    logging.critical("Запущена принудительная остановка бота администратором")
+    await message.answer(text="🤖 Принудительная остановка бота")
+    await bot.delete_webhook(drop_pending_updates=True) # Удаляем вебхук и, при необходимости, очищаем ожидающие обновления
+    await bot.session.close() # Закрываем сессию бота, освобождая ресурсы
+    os._exit(1)
+
 ## Массовая рассылка пользователям 
 # TODO: Доработать функцию рассылки для пользователей (На данный момент не работает отправка пользователям)
 @dp.message(StateFilter(None), Command("broadcast"))
@@ -806,23 +821,52 @@ async def get_project_info(message: Message):
     await bot.send_message(message.from_user.id, text="Задача завершена", disable_web_page_preview=True, disable_notification=True)
     # Можно также отправить пользователю подтверждение о добавлении всех строк
 
+# TODO: Странно отрабатывает, возможно удалить
+# Список быстрых команд
+async def set_commands():
+    ## Команды для пользователей
+    user_commands = [
+        BotCommand(command='start', description='Старт'),
+        BotCommand(command='projects', description='Список проектов'),
+        BotCommand(command='settings', description='Настройки')
+    ]
+
+    await bot.set_my_commands(user_commands, BotCommandScopeDefault()) # Устанавливаем команды для пользователей
+
 # Функция выполняемая при запуске бота
 async def on_startup():
+    await set_commands() # Установка командного меню
+    await bot.delete_webhook(drop_pending_updates=True)
     await bot.send_message(admin_id, "🤖 Бот запущен", disable_notification=True)
+
+async def on_shutdown():
+    await bot.send_message(admin_id, "🤖 Бот остановлен")
+    await bot.delete_webhook(drop_pending_updates=True) # Удаляем вебхук и, при необходимости, очищаем ожидающие обновления
+    await bot.session.close() # Закрываем сессию бота, освобождая ресурсы
+    os._exit(1)
 
 # Запуск процесса поллинга новых апдейтов
 async def main():
-    dp.startup.register(on_startup) # Запуск функции при запуске бота
+    dp.startup.register(on_startup) # Выполняемая функция при запуске бота
+    dp.shutdown.register(on_shutdown) # Выполняемая функция при остановке бота
+    await bot.delete_webhook()
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
+    i = 0
+    loop = asyncio.get_event_loop() # Получаем текущий event loop
+    
     while True:
         try:
             if os.getenv("API_TOKEN") is None:
                 logging.critical("Не удалось загрузить переменную API_TOKEN для aiogram. Убедитесь, что он есть в файле .env")
             else:
                 init_db()
-                asyncio.run(main())
+                loop.run_until_complete(main())  # Запускаем main() в текущем event loop
         except Exception as e:
-            logging.critical(f"Произошла критическая ошибка: {e}. Перезапуск бота...")
-            os.sleep(5)  # Задержка перед перезапуском
+            i += 1
+            logging.critical(f"Произошла критическая ошибка: {e}. Перезапуск бота. Попытка {i}")
+            if i >= 5:
+                logging.critical(f"Достигнуто максимальное количество ошибок - {i}. Завершение программы")
+                os._exit(0)
+            time.sleep(5)  # Задержка перед перезапуском

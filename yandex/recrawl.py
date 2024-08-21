@@ -12,8 +12,12 @@ def get_yandex_user_id(user_id, yandex_user_token):
     responseJSON = response.json()
     logging.info(f"responseJSON = {responseJSON}")
     if "error_code" in responseJSON:
-        logging.error("Ошибка!")
-        return False
+        if responseJSON['error_code'] == "INVALID_OAUTH_TOKEN":
+            logging.error("Предоставленный OAuth токен является невалидным или с истекшим сроком действия")
+            return False
+        else:
+            logging.error(f"Ошибка: {responseJSON['error_code']}")
+            return False
     elif "user_id" in responseJSON:
         logging.info(f"[{user_id}] Получен уникальный идентификатор пользователя Яндекс (yandexUserID = {str(responseJSON['user_id'])})")
         return str(responseJSON['user_id'])

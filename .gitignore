@@ -153,9 +153,9 @@ dmypy.json
 cython_debug/
 
 # Custom
-.drawio
-.db
+*.drawio
+*.db
 __pycache__
 .vscode
-.old
+*.old
 .gitignore

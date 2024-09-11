@@ -23,6 +23,7 @@ from indexnow.publish_single import indexnow_publish
 
 # TODO: Настроить запись логов в файл
 logging.basicConfig(level=logging.INFO, format='%(asctime)s / %(levelname)s / %(message)s', datefmt='%d.%m.%y %H:%M:%S') # Запись логов в файл
+__version__ = "0.1.0"
 main.load_dotenv()
 storage = MemoryStorage()
 router = Router()
@@ -763,7 +764,7 @@ async def get_project_info(message: Message):
 
     for line in urls[:]:
         project_url = check_valid_url(message.from_user.id, line, True)
-
+        # TODO: Если проект не добавлен у пользователя, выдаем ошибку
         if not project_url:
             logging.error(f"[{message.from_user.id}] Введенный домен {project_url} недоступен или несуществует. Удаляем строку {line} из списка URL")
             # await message.reply(f"Введенный домен {project_url} недоступен или не существует. Пожалуйста, введите корректный URL.")
@@ -837,7 +838,7 @@ async def set_commands():
 async def on_startup():
     await set_commands() # Установка командного меню
     await bot.delete_webhook(drop_pending_updates=True)
-    await bot.send_message(admin_id, "🤖 Бот запущен", disable_notification=True)
+    await bot.send_message(admin_id, f"🤖 Бот запущен – {__version__}", disable_notification=True)
 
 async def on_shutdown():
     await bot.send_message(admin_id, "🤖 Бот остановлен")

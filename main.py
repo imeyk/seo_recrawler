@@ -23,7 +23,7 @@ from indexnow.publish_single import indexnow_publish
 
 # TODO: Настроить запись логов в файл
 logging.basicConfig(level=logging.INFO, format='%(asctime)s / %(levelname)s / %(message)s', datefmt='%d.%m.%y %H:%M:%S') # Запись логов в файл
-__version__ = "0.1.0"
+__version__ = "0.0.2"
 main.load_dotenv()
 storage = MemoryStorage()
 router = Router()

@@ -1,69 +1,58 @@
 import logging
 import requests
-from urllib.parse import urlparse
 
-# TODO: Добавить определение http://, https://, http://www., https://www.
-# TODO: При проверке статус-кода сайта, проблема с редиректами на сайтах (пример x-profil.ru)
-# Функция проверки валидности URL и отключения редиректов
-def check_valid_url(user_id, url, check_domain=False):
-    logging.info(f"[{user_id}] Начат процесс проверки URL {url} на валидность без редиректов")
+# Настройка логирования
+logging.basicConfig(level=logging.INFO)
 
-    # Добавление схемы, если она отсутствует
-    if not url.startswith(('http://', 'https://')):
-        url = 'http://' + url
-
-    try:
-        # Отправляем запрос без редиректов
-        response = requests.get(url, timeout=5, allow_redirects=False)
-    except requests.exceptions.RequestException as e:
-        logging.error(f"[{user_id}] Ошибка при подключении к {url}: {e}")
-        return None
-
-    # Проверка статуса ответа
-    if response.status_code == 200:
-        logging.info(f"[{user_id}] Получен успешный ответ (200) от {url}")
-    elif 300 <= response.status_code < 400:
-        # Если мы получили редирект, логируем местоположение редиректа
-        redirect_url = response.headers.get('Location')
-        logging.warning(f"[{user_id}] Редирект на {redirect_url}")
-        return redirect_url
-    else:
-        logging.error(f"[{user_id}] Неверный статус код {response.status_code} при попытке доступа к {url}")
-        return None
-
-    # Получаем конечный URL без редиректа
-    final_url = response.url
-    parsed_final_url = urlparse(final_url)
-    hostname = parsed_final_url.netloc
-    scheme = parsed_final_url.scheme
-
-    # Проверка схемы протокола (поддерживаются http://, https://)
-    if not (scheme in ['http', 'https'] and hostname.startswith(('www.', ''))):
-        logging.error(f"[{user_id}] Неподдерживаемый URL {final_url}")
-        return None
-
-    logging.info(f"[{user_id}] Конечный URL после проверки: {final_url}")
+def check_valid_url(user_id, url, check_domain=True):
+    prefixes = ['https://', 'http://', 'http://www.', 'https://www.']
+    tried_urls = set()
 
     if check_domain:
-        # Возвращаем только домен с протоколом
-        domain_url = f"{scheme}://{hostname}/"
-        logging.info(f"[{user_id}] Возвращаем домен: {domain_url}")
-        return domain_url
+        # Если проверяем домен, добавляем префиксы
+        if url.startswith('http://') or url.startswith('https://'):
+            urls_to_try = [url]
+        else:
+            urls_to_try = [prefix + url for prefix in prefixes]
     else:
-        # Возвращаем полный URL
-        return final_url
+        # Если не проверяем домен, используем URL как есть
+        urls_to_try = [url]
+
+    for url_to_check in urls_to_try:
+        # Избегаем повторных проверок одного и того же URL
+        if url_to_check in tried_urls:
+            continue
+        tried_urls.add(url_to_check)
+        try:
+            response = requests.get(url_to_check, timeout=10)
+            status_code = response.status_code
+            logging.info(f'{user_id} URL: {url_to_check}, Код статуса: {status_code}')
+            # Если произошел редирект
+            if response.history:
+                final_url = response.url
+                logging.info(f'{user_id} Перенаправлено на: {final_url}')
+                # Выходим из цикла после первого редиректа
+                return final_url
+            else:
+                # Если нет редиректов, выходим из цикла
+                return url_to_check
+        except requests.exceptions.RequestException as e:
+            logging.error(f'{user_id} Ошибка при доступе к {url_to_check}: {e}')
+            # Переходим к следующему префиксу, если есть ошибка
+            continue
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO, format='[%(asctime)s] %(levelname)s: %(message)s', datefmt='%H:%M:%S %d.%m.%Y')
+    # url = input('Введите домен или URL: ')
+    # check_domain_input = input('Проверять как домен? (True/False): ')
+    # check_domain = check_domain_input.strip().lower() == 'true'
+    # check_status_code(url, check_domain=True)
 
-    user_id = 666666
-    # url = "imeyk.ru"  # Вводим URL
-    # check_domain = False  # Установите True, чтобы возвращать только домен
-    url = "https://www.x-profil.by"
-    check_domain = True
-
-    result = check_valid_url(user_id, url, check_domain)
-    if result:
-        print(f"Финальный URL: {result}")
-    else:
-        print("Ошибка при проверке URL")
+    print (check_valid_url(user_id='test', url='x-profil.ru', check_domain=True))
+    '''
+    check_status_code('www.x-profil.ru')
+    check_status_code('x-profil.ru')
+    check_status_code('www.x-profil.ru')
+    check_status_code('x-profil.by')
+    check_status_code('asasasdsadsad')
+    check_status_code('asasasdsadsad.com')
+    '''

@@ -23,7 +23,7 @@ from indexnow.publish_single import indexnow_publish
 
 # TODO: Настроить запись логов в файл
 logging.basicConfig(level=logging.INFO, format='%(asctime)s / %(levelname)s / %(message)s', datefmt='%d.%m.%y %H:%M:%S') # Запись логов в файл
-__version__ = "0.0.2"
+__version__ = "0.0.3"
 main.load_dotenv()
 storage = MemoryStorage()
 router = Router()
@@ -409,7 +409,8 @@ async def process_use_webmaster(callback_query: types.CallbackQuery, state: FSMC
     await state.update_data(webmaster=True) # await state.get_data()
     await bot.answer_callback_query(callback_query.id) # ???
     logging.info(f"{username} / Добавление проекта / Yandex Webmaster / Ождиание токена от пользователя")
-
+    
+    # TODO: Добавить проверку токена пользователя Яндекс Вебмастер
     logging.info(f"{username} / Добавление проекта / Yandex Webmaster /Соединение с базой данных") # Запрос к базе данных
     conn = sqlite3.connect(DB)
     cursor = conn.cursor()
@@ -798,6 +799,17 @@ async def get_project_info(message: Message):
                         yandex_user_token = yandex_user_token[0]
 
                     webmaster_result = yandex_recrawl(message.from_user.id, yandex_user_token, line)
+
+                    # TODO: Доделать дилоговое окно при возникновении ошибки при переобходе
+                    if "🔴" in webmaster_result:
+                        builder = InlineKeyboardBuilder()
+                        builder.row(
+                            types.InlineKeyboardButton(text="Да", callback_data="non-action"),
+                            types.InlineKeyboardButton(text="Нет", callback_data="non-action")
+                        )
+
+                        await bot.send_message(message.from_user.id, text=f"{line}\n\n{webmaster_result}\n\nПродолжить отправку на переобход?", disable_web_page_preview=True, disable_notification=True, reply_markup=builder.as_markup())
+                        break
 
                 # Отправка на переобход при помощи технологии IndexNow
                 if indexnow:
